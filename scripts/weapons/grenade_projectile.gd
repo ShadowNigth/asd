@@ -159,7 +159,7 @@ func _apply_he_damage() -> void:
 	for actor in GameManager.get_all_actors():
 		if not is_instance_valid(actor) or actor.get("health") <= 0:
 			continue
-		var d := actor.global_position.distance_to(global_position)
+		var d: float = actor.global_position.distance_to(global_position)
 		if d > 8.5:
 			continue
 		var raw := 98.0 * clampf(1.0 - d / 8.5, 0.0, 1.0)

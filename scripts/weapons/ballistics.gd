@@ -130,14 +130,15 @@ static func fire_raycast(
 		var exit_res := space_state.intersect_ray(exit_query)
 		if exit_res.is_empty():
 			break
-		var thickness := hit_pos.distance_to(exit_res["position"])
+		var exit_pos: Vector3 = exit_res["position"]
+		var thickness: float = hit_pos.distance_to(exit_pos)
 		if thickness <= 0.005 or thickness > max_thick:
 			break
 		pen_power -= thickness / 0.35
 		pen_factor *= clampf(1.0 - (thickness / (max_thick + 0.05)) * 0.65, 0.2, 0.9)
 		if pen_power <= 0.0:
 			break
-		cur_origin = exit_res["position"] + cur_dir * 0.02
+		cur_origin = exit_pos + cur_dir * 0.02
 
 	return {
 		"end_point": end_point,

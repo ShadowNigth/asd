@@ -182,14 +182,14 @@ func load_weapon(weapon_id: int, is_c4: bool = false) -> void:
 			if ap != null:
 				var anim_names := ap.get_animation_list()
 				if anim_names.size() > 0:
-					var anim := ap.get_animation(anim_names[0]).duplicate()
+					var anim: Animation = ap.get_animation(anim_names[0]).duplicate() as Animation
 					lib.add_animation(m_key, anim)
 		else:
 			var ap2 := _find_first_anim_player(inst)
 			if ap2 != null:
 				var anim_names2 := ap2.get_animation_list()
 				if anim_names2.size() > 0:
-					var anim2 := ap2.get_animation(anim_names2[0]).duplicate()
+					var anim2: Animation = ap2.get_animation(anim_names2[0]).duplicate() as Animation
 					lib.add_animation(m_key, anim2)
 			inst.queue_free()
 
@@ -294,21 +294,21 @@ func _apply_source_retargeting() -> void:
 
 	if _hands_skel != null:
 		for b in _arms_bindings:
-			var sp := _source_skel.get_bone_global_pose(b["src"])
-			_hands_skel.set_bone_global_pose_override(b["dst"], SOURCE_BASIS * sp, 1.0, true)
+			var sp: Transform3D = _source_skel.get_bone_global_pose(int(b["src"]))
+			_hands_skel.set_bone_global_pose_override(int(b["dst"]), SOURCE_BASIS * sp, 1.0, true)
 
 	if _weapon_skel != null:
-		var wpn_pose := _source_skel.get_bone_global_pose(_wpn_src_bone) if _wpn_src_bone >= 0 else Transform3D.IDENTITY
-		var attach_xform := SOURCE_BASIS * wpn_pose
+		var wpn_pose: Transform3D = _source_skel.get_bone_global_pose(_wpn_src_bone) if _wpn_src_bone >= 0 else Transform3D.IDENTITY
+		var attach_xform: Transform3D = SOURCE_BASIS * wpn_pose
 		for b in _weapon_bindings:
-			var sp := _source_skel.get_bone_global_pose(b["src"])
-			var target_pose := attach_xform * sp
-			if not _suppressed and _weapon_skel.get_bone_name(b["dst"]) == "silencer":
+			var sp: Transform3D = _source_skel.get_bone_global_pose(int(b["src"]))
+			var target_pose: Transform3D = attach_xform * sp
+			if not _suppressed and _weapon_skel.get_bone_name(int(b["dst"])) == "silencer":
 				target_pose = target_pose.scaled_local(Vector3(0.0001, 0.0001, 0.0001))
-			_weapon_skel.set_bone_global_pose_override(b["dst"], target_pose, 1.0, true)
+			_weapon_skel.set_bone_global_pose_override(int(b["dst"]), target_pose, 1.0, true)
 
 		if _muzzle_src_bone >= 0:
-			var mp := attach_xform * _source_skel.get_bone_global_pose(_muzzle_src_bone)
+			var mp: Transform3D = attach_xform * _source_skel.get_bone_global_pose(_muzzle_src_bone)
 			_last_muzzle_world = global_transform * mp.origin
 
 func get_muzzle_world_position(cam: Camera3D) -> Vector3:

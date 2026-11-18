@@ -126,8 +126,8 @@ func _start_next_round() -> void:
 func is_freeze_time() -> bool:
 	return phase == Phase.FREEZE_TIME
 
-func get_all_actors() -> Array:
-	var out: Array = []
+func get_all_actors() -> Array[Node3D]:
+	var out: Array[Node3D] = []
 	if is_instance_valid(local_player):
 		out.append(local_player)
 	for b in bots:
@@ -236,7 +236,7 @@ func _explode_bomb() -> void:
 	for a in get_all_actors():
 		if not is_instance_valid(a) or not a.get("alive"):
 			continue
-		var d := a.global_position.distance_to(planted_bomb_pos)
+		var d: float = a.global_position.distance_to(planted_bomb_pos)
 		if d < 42.0:
 			var dmg := int(maxf(1.0, 400.0 * exp(-d / 14.0)))
 			if a.has_method("apply_damage"):
