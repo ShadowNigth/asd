@@ -1,0 +1,13 @@
+{
+  "name": "cs2go-godot-asset-tools",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@gltf-transform/core": "^4.1.0",
+    "@gltf-transform/extensions": "^4.1.0",
+    "@gltf-transform/functions": "^4.1.0",
+    "meshoptimizer": "^0.22.0",
+    "sharp": "^0.34.0",
+    "three": "^0.174.0"
+  }
+}

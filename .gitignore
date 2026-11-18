@@ -1,0 +1,10 @@
+# Godot 4 ignores
+.godot/
+*.translation
+export_presets.cfg
+*.tmp
+
+# Asset pipeline dependencies & cache
+tools/node_modules/
+tools/.cache/
+tools/package-lock.json
