@@ -79,6 +79,8 @@ Errores de ángulo vs bind: a_base solo difiere en los 4 huesos raíz de brazos
 - reload f50: arma abajo, manos al guardamanos y cerrojo ✓
 - Winding corregido por triángulo contra la normal media (los triángulos cuya
   diagonal no coincide con la normal se voltean a la escritura).
+- Imágenes commiteadas: `preview_idle.png`, `preview_draw.png`, `preview_reload.png`,
+  `preview_bind.png` (generadas con `preview`; rasterizador software en el tool).
 
 ## 6. Trasplante de brazos (la parte delicada)
 

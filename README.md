@@ -38,6 +38,18 @@ trasplante de brazos) está documentado en **`docs/PIPELINE.md`**.
 | `tools/setup_tools.sh` | Clonado/compilación de las herramientas (SourceIO, studiomdl-sven, halflife-tools) |
 | `docs/` | PIPELINE.md, INSTALL.md, NOTICE.md |
 
+## Vista previa (bind y animaciones, rasterizado headless)
+
+| Pose | Imagen |
+|---|---|
+| Bind (referencia) | `docs/preview_bind.png` |
+| idle f0 | `docs/preview_idle.png` |
+| draw f8 | `docs/preview_draw.png` |
+| reload f50 | `docs/preview_reload.png` |
+
+![idle](docs/preview_idle.png)
+![reload](docs/preview_reload.png)
+
 ## Avisos
 
 Contenido derivado de assets de Valve (CS 1.x, CS2): **solo para uso personal,
