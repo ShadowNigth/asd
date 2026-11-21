@@ -1,0 +1,6 @@
+# Intermediarios generados por el pipeline (se regeneran con tools/)
+/work/
+/tools/vendor/
+*.pyc
+__pycache__/
+.DS_Store
