@@ -45,6 +45,84 @@ from anim_decoder import AnimDecoder, decode_animation  # noqa: E402  (tools/ani
 
 sys.path.insert(0, str(REPO_ROOT / 'tools'))
 
+def _cs2_bind_json(build) -> dict:
+    """Pose bind del viewmodel CS2 escalado (mundo gun-units) para blender_export_cp2077."""
+    bones = []
+    mats = mats_scale_translate(build.mdl.bones, build.scale, build.offset)
+    for i, b in enumerate(build.mdl.bones):
+        m = mats[i]
+        bones.append({'name': b.name, 'parent': int(b.parent_id),
+                      'abs_pos': [float(x) for x in m[:3, 3]],
+                      'abs_rot': [float(x) for x in m[:3, :3].flatten()]})
+    return {'bones': bones, 'scale': float(build.scale), 'offset': [float(x) for x in build.offset]}
+
+
+def _prepare_cp2077_arms(build, wdir: Path, recipe) -> None:
+    """Genera work/<weapon>/cp2077_arms.smd.json + cp_*.bmp (pipeline bpy headless)."""
+    bind_path = wdir / 'cs2_bind.json'
+    bind_path.write_text(json.dumps(_cs2_bind_json(build)))
+    blend = REPO_ROOT / recipe.get('cp2077_blend', 'work/cyberpunk-multirig/Cyberpunk_Rig.blend')
+    script = REPO_ROOT / 'tools' / 'blender_export_cp2077.py'
+    bpy_py = VENDOR / 'bpy-venv' / 'bin' / 'python'
+    stublibs = VENDOR / 'stublibs'
+    blpy_libs = next(iter((VENDOR / 'bpy-venv' / 'lib').glob('python*/site-packages/bpy.libs')), None)
+    ld = '%s:%s' % (stublibs, blpy_libs) if blpy_libs else str(stublibs)
+    env = dict(os.environ, LD_LIBRARY_PATH=ld)
+    cmd = [str(bpy_py), str(script), '--blend', str(blend),
+           '--cs2bind', str(bind_path), '--out-tris', str(wdir / 'cp2077_arms.smd.json'), '--corr', recipe.get('cp2077_corr', 'full'),
+           '--bake-dir', str(wdir)]
+    print('+ ' + ' '.join(cmd))
+    subprocess.run(cmd, check=True, env=env)
+    _cp2077_pngs_to_bmps(wdir)
+
+
+def load_cp2077_arm_tris(wdir: Path):
+    frag = json.loads((wdir / 'cp2077_arms.smd.json').read_text())
+    tris = []
+    for mat, tri in frag['tris']:
+        corners = []
+        for item in tri:
+            b, p, n, uv = item[0], item[1], item[2], item[3]
+            corners.append((int(b), np.array(p, dtype=np.float64),
+                            np.array(n, dtype=np.float64), np.array(uv, dtype=np.float64)))
+        tris.append((mat, corners))
+    return tris, frag
+
+
+def _cp2077_pngs_to_bmps(wdir: Path) -> None:
+    """PNG horneados -> BMP 8 bits (formato GoldSrc); decals -> {BMP azul-clave."""
+    from PIL import Image
+    frag = json.loads((wdir / 'cp2077_arms.smd.json').read_text())
+    for mat, bmp_name in frag['materials'].items():
+        png = wdir / (bmp_name.replace('{', '').replace('.bmp', '.png'))
+        if not png.exists():
+            print('AVISO: falta textura horneada', png)
+            continue
+        im = Image.open(png).convert('RGBA')
+        if max(im.size) > 512:  # límite vanilla GoldSrc
+            w, h = im.size
+            f = 512 / max(w, h)
+            im = im.resize((max(1, int(w * f)), max(1, int(h * f))), Image.LANCZOS)
+        if bmp_name.startswith('{'):
+            arr = np.array(im)
+            key = arr[..., 3] < 128
+            rgb = arr[..., :3].copy()
+            rgb[key] = (0, 0, 255)
+            base = Image.fromarray(rgb).quantize(colors=255, method=Image.MEDIANCUT)
+            pal = list(base.getpalette())          # 768 entradas
+            pal = pal[:765] + [0, 0, 255] + [0] * (768 - 765)
+            indices = np.array(base)
+            indices[key] = 255
+            out = Image.fromarray(indices.astype(np.uint8), 'P')
+            out.putpalette(pal)
+            out.save(wdir / bmp_name, 'BMP')
+        else:
+            rgb = im.convert('RGB')
+            if max(rgb.size) > 512:
+                rgb = rgb.resize((512, 512), Image.LANCZOS)
+            rgb.convert('P', palette=Image.MEDIANCUT, colors=256).save(wdir / bmp_name, 'BMP')
+        print('bmp', bmp_name)
+
 # ── Recetas de armas (pilotos) ───────────────────────────────────────────────
 WEAPONS = {
     'ak47': {
@@ -56,6 +134,8 @@ WEAPONS = {
         'modelname': 'v_ak47.mdl',
         'gun_length_ref': 31.2063,          # largo del AK de referencia (SMD CS 1.5)
         'ref_bbox_center': (0.20115, -20.17045, 2.54755),
+        'arm_source': 'cp2077',           # 'cs15' = brazos CS 1.5 trasplantados | 'cp2077' = Gorilla Arms/piel CP2077
+        'cp2077_blend': 'work/cyberpunk-multirig/Cyberpunk_Rig.blend',
         'arm_reference_smd': '/tmp/ref/tmp/ref/out71/ak47_template.smd',
         'arm_materials': ('hand.bmp', 'thumb.bmp'),
         'arm_map': {   # hueso CS 1.6 -> hueso CS2 (trasplante de brazos)
@@ -467,8 +547,16 @@ class WeaponBuild:
     def write_reference_smd(self, out_path: Path):
         positions, normals, uvs, dominant, tris = self.gun_mesh()
         positions = self.scaled_points(positions)
-        fit = {}
-        arm_tris = self.arm_mesh(fit)
+        arm_source = self.recipe.get('arm_source', 'cs15')
+        wdir = Path(self.recipe.get('work_dir', str(out_path.parent)))
+        mat_bmp = {}
+        if arm_source == 'cp2077':
+            arm_tris, frag = load_cp2077_arm_tris(wdir)
+            mat_bmp = frag['materials']
+            fit = {'mode': 'cp2077-full-orientation'}
+        else:
+            fit = {}
+            arm_tris = self.arm_mesh(fit)
         if getattr(self, 'report_fit', False):
             self.fit = fit
 
@@ -496,7 +584,7 @@ class WeaponBuild:
                     corners.append((int(dominant[vi]), positions[vi], normals[vi], uvs[vi]))
                 emit_tri('ak47.bmp', corners, uv_flip=True)
             for mat, corners in arm_tris:
-                emit_tri(mat, corners, uv_flip=False)
+                emit_tri(mat_bmp.get(mat, mat), corners, uv_flip=False)
             f.write('end\n')
 
     def write_anim_smd(self, out_path: Path, anim_name: str):
@@ -611,6 +699,9 @@ def cmd_build(args):
     build = WeaponBuild(recipe)
     wdir = work_dir(args.weapon)
     wdir.mkdir(parents=True, exist_ok=True)
+    recipe['work_dir'] = str(wdir)
+    if recipe.get('arm_source') == 'cp2077':
+        _prepare_cp2077_arms(build, wdir, recipe)
     # SMDs
     ref_smd = wdir / 'ak47_reference.smd'
     build.write_reference_smd(ref_smd)
@@ -622,9 +713,10 @@ def cmd_build(args):
     # sonidos
     build.export_sounds(wdir / 'sound')
     # textura de brazos (BMP 8 bits del modelo de referencia)
-    for arm_bmp in ('hand.bmp', 'thumb.bmp'):
-        src_bmp = Path(recipe['arm_reference_smd']).parent / 'maps_8bit' / arm_bmp
-        shutil.copy(src_bmp, wdir / arm_bmp)
+    if recipe.get('arm_source', 'cs15') == 'cs15':
+        for arm_bmp in ('hand.bmp', 'thumb.bmp'):
+            src_bmp = Path(recipe['arm_reference_smd']).parent / 'maps_8bit' / arm_bmp
+            shutil.copy(src_bmp, wdir / arm_bmp)
     # QC
     build.write_qc(wdir / 'ak47.qc', wdir, wdir)
     if not args.no_compile:

@@ -10,13 +10,18 @@ Los archivos bajo `game/` y `dist/` contienen material derivado de
 
 - La malla, las animaciones y las texturas del arma provienen de los packs
   oficiales de viewmodels de CS2 (obtenidos por el usuario).
-- Los brazos/manos son el modelo `v_ak47.mdl` de CS 1.5 (beta pública filtrada)
-  descompilado y re-apuntado.
+- Los brazos/manos (Gorilla Arm izquierda + Skin Pale derecha) provienen de
+  **Cyberpunk 2077** (CD Projekt Red) a través del rig público
+  [Cyberpunk2077-MultiRig](https://github.com/goribby/Cyberpunk2077-MultiRig)
+  de **goribby** (Blender .blend de GitHub, licencia del repositorio del autor).
+  Texturas derivadas del juego pertenecen a CD Projekt Red; texturas del rig
+  pertenecen a goribby según los términos de su repositorio.
 - Los sonidos son los .wav oficiales de CS2 convertidos a 22050 Hz mono.
 
 **Prohibida su redistribución pública** (Workshop, foros, webs, mirror links).
 Úsalos únicamente en tu instalación local. Los términos de Valve
-(Software Model End User License Agreement) siguen aplicando.
+(Software Model End User License Agreement) y los términos de
+CD Projekt Red siguen aplicando.
 
 ## Herramientas (código de terceros, usado localmente)
 

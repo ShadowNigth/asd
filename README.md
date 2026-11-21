@@ -5,7 +5,8 @@ formato **GoldSrc** para usarlos como reemplazo directo de los viewmodels de
 Counter-Strike 1.x en **Xash3D FWGS** (también vale en CS 1.6 clásico).
 
 **Piloto: AK-47** (`v_ak47.mdl`) — malla y animaciones de carga CS2 (idle, draw,
-recarga, 3 disparos), texturas recodificadas, brazos del modelo clásico
+recarga, 3 disparos), texturas recodificadas, **brazos de Cyberpunk 2077**
+(Gorilla Arm izquierda + Skin Pale derecha, rig público de goribby/Cyberpunk2077-MultiRig)
 re-apuntados a los huesos CS2, sonidos CS2 convertidos a 22050 Hz 16-bit mono.
 Más armas por venir con el mismo pipeline.
 
@@ -44,8 +45,12 @@ trasplante de brazos) está documentado en **`docs/PIPELINE.md`**.
 |---|---|
 | Bind (referencia) | `docs/preview_bind.png` |
 | idle f0 | `docs/preview_idle.png` |
-| draw f8 | `docs/preview_draw.png` |
+| draw f20 | `docs/preview_draw.png` |
 | reload f50 | `docs/preview_reload.png` |
+
+Las animaciones de brazo del pack de archi se reproducen tal cual (la malla del
+arma es hija del hueso `weapon_hand_r`, es decir, el arma queda
+rígida respecto a la muñeca derecha, como manda el esqueleto original).
 
 ![idle](docs/preview_idle.png)
 ![reload](docs/preview_reload.png)

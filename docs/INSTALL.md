@@ -16,7 +16,7 @@
 
 | Archivo | Qué hace |
 |---|---|
-| `cstrike/models/v_ak47.mdl` | Viewmodel del AK-47 con malla y animaciones portadas de CS2 (idle/recarga/draw/1-3 disparos) |
+| `cstrike/models/v_ak47.mdl` | Viewmodel del AK-47: malla y animaciones CS2 + **brazos de Cyberpunk 2077** (Gorilla izquierda / Skin Pale derecha; contenido derivado de CD Projekt Red y goribby — solo uso personal, ver `NOTICE.md`) |
 | `cstrike/sound/weapons/cs2_ak47_01.wav` | Disparo CS2 (variación 1), 22050 Hz 16-bit mono PCM |
 | `cstrike/sound/weapons/cs2_ak47_02.wav` | Disparo CS2 (variación 2) |
 | `cstrike/sound/weapons/cs2_ak47_03.wav` | Disparo CS2 (variación 3) |

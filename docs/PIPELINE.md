@@ -13,10 +13,10 @@ SourceIO (mdl/vvd/vtx) ─┐
                         ├─► malla LOD0 (29 960 triángulos, 21 756 vértices)
 anim_decoder (.ani) ────► 69 huesos, 11 secuencias, pose CONST+FRAME
                         ├─► escala×0.837 + traslación (bbox arma → bbox AK stock)
-ref CS 1.5 (SMD) ───────┴─► brazos re-apuntados (alineación por dirección de hueso)
+CP2077 MultiRig (.blend) ┴─► brazos Cyberpunk 2077 (28 487 triángulos) re-apuntados a huesos CS2
 VTF ─► BMP 8 bits ────────► ak47.bmp 512×512
 CS2 wav ─► PCM 22050/16 mono ─► sound/weapons/cs2_ak47_*.wav
-studiomdl-sven (parchado) ► v_ak47.mdl (10x IDST, 6 secuencias, 52 huesos, 3 texturas)
+studiomdl-sven (parchado) ► v_ak47.mdl (10x IDST, 6 secuencias, 50 huesos)
 ```
 
 ## 2. Dependencias
@@ -82,37 +82,58 @@ Errores de ángulo vs bind: a_base solo difiere en los 4 huesos raíz de brazos
 - Imágenes commiteadas: `preview_idle.png`, `preview_draw.png`, `preview_reload.png`,
   `preview_bind.png` (generadas con `preview`; rasterizador software en el tool).
 
-## 6. Trasplante de brazos (la parte delicada)
+## 6. Trasplante de brazos Cyberpunk 2077 (la parte delicada)
 
 El viewmodel CS2 **no trae brazos** (los 21 756 vértices están skinned a huesos de
-arma 48-67). Los brazos vienen del `v_ak47.mdl` de CS 1.5 (beta, repo de referencia):
-`hand.bmp` (187 tris) + `thumb.bmp` (384 tris), ~571 triángulos.
+arma, predominantemente `weapon_hand_r`, índice 48: el arma es hija rígida de la
+muñeca derecha). El pack tampoco incluye rig de cámara ni mallas de brazos
+(el `.blend`/mdl de archi está pensado como prop de weapon para cinemáticas o
+para el rig de brazos que CS2 renderiza en un modelo aparte).
 
-Mapeo de huesos (transverso: la cadena "izquierda" CS 1.5 es la del gatillo trasero →
-huesos DERECHOS CS2; la delantera → huesos IZQUIERDOS CS2; pulgar→Finger0 por
-orden X en ambas manos):
+Los brazos vienen del rig público **Cyberpunk2077-MultiRig** de goribby
+(`Cyberpunk_Rig.blend`, Blender 4.x, parseado headless con `bpy`):
 
-```
-ref0→R_Forearm(1), ref1→R_Hand(2),
-ref15,16,17→R_Finger0, ref2-5→R_Finger1, ref6-8→R_Finger2, ref9-11→R_Finger3, ref12-14→R_Finger4
-ref24→L_Forearm(3), ref25→L_Hand(4),
-ref26-29→L_Finger0, ref30-32→L_Finger1, ref33-35→L_Finger2, ref36-38→L_Finger3, ref39-41→L_Finger4
-```
+- Variante elegida (keyart/locked): **Gorilla Arm izquierda** (shell, dedos, placas,
+  cables, nudillos, decals) + **Skin Pale derecha** (antebrazo/palma + uñas).
+  Ver `INCLUDE` en `tools/blender_export_cp2077.py`.
+- Exportación: rest-pose, skinning por matriz de reposo (`matrix_local`), dominio
+  del vertex group por triángulo.
+- **Corrección de orientación** (`--corr full`): `corr(b) = R_dst · R_srcᵀ` por hueso
+  estructural (ForeArm/Hand/fingers), componiendo en jerarquía. La rest-pose de
+  CP2077 cuelga hacia abajo-delante mientras el bind CS2 mira al arma; el factor
+  uniforme de escala es la razón de longitudes de antebrazo (≈31.3 en unidades
+  del .blend) en ambos lados.
+- **Ancla única por triángulo**: los tres vértices de cada cara cuelgan del hueso
+  ancla de la esquina con mayor peso dominante (antes cada esquina iba a su propio
+  hueso y los triángulos que cruzaban huesos se estiraban como cintas).
+- Huesos máquina/músculo de CP2077 (raíces desconectadas, sin correspondencia en
+  el esqueleto CS2) se anclan al hueso estructural más cercano en rest-pose.
+- Texturas: UVs del .blend + bake Cycles de los grupos de nodos (albedo por
+  material) → BMP 8 bits; decals como `{`-BMP (clave azul), recortados a ≤512.
+- Normales re-orientadas por el mismo corr; viento corregido por triángulo
+  contra la normal media.
 
-Colocación (v1: Kabsch global → malo; v2: alineación por dirección):
+Resultado: brazos gorilla completos (izquierda) y piel pálida (derecha),
+respetando el pack de archi: la geometría del arma queda rígida respecto a la
+muñeca derecha (`weapon_hand_r`), igual que en CS2. Las animaciones de brazo
+del pack son las que definen la pose; el arma, los brazos y la manipulación
+duran lo que duran sus curvas (verificado en idle/draw/reload con el
+rasterizador software: `ak47_idle`, `ak47_draw`, `ak47_reload`, `ak47_fire1..3`).
 
-Para cada hueso mapeado, `Q = rotation_from_to(dir_ref, dir_cs2)` con
-`dir = normalizar(media(pos_abs(hijos)) − pos_abs(hueso))` y, para hojas, `dir = dir_entrante`.
-Cada vértice se coloca: `v' = pos_cs2 + Q·(v − pos_ref)`. Cada articulación queda
-EXACTAMENTE en su posición CS2; el rollo alrededor del eje óseo es el mínimo giro.
+**Limitaciones conocidas**:
+- El pack de archi publica el arma sin brazos; la relación arma↔brazos en
+  pantalla es la que definen las curvas FRAMEANIM del pack (brazos que entran
+  desde los laterales/bottom, como en el bind). No hay garantía de
+  "manos sobre el arma" perfecta en todos los cuadros: es el dato original.
+- Los cables/nudillos de CP2077 deforman bien en idle/draw; en reload muy
+  contorsionado los decals pueden bailar unos mm. Aceptable para piloto.
+- El esqueleto GoldSrc no soporta IK; no hay intención de añadirlo.
 
-Resultado: manos en los dos puntos de agarre con holgura de dedos consistente;
-el antebrazo trasero se orienta hacia la cámara como en CS 1.x.
-
-**Limitaciones conocidas**: las manos son pose estática "puño de sujeción" (no
-discrepan de la animación porque van skinned a los huesos CS2 y las animaciones
-mueven los huesos); en recargas muy contorsionadas los dedos pueden interpenetrar
-el guardamanos 1-2 mm (herencia de la malla 1.5). Aceptable para piloto.
+**Historial de intentos fallidos** (para no repetir): corrección `full` por-bone
+sin jerarquía (cintas estiradas), alineación por dirección de hueso v1/v2
+(brazos desconectados / bbox explotada), y composición compartida global Kabsch
+(descartada: el bind CP2077 es ~anti-paralelo al bind CS2 en toda la cadena,
+con swings de 125-156° uniformes).
 
 ## 7. Sonidos
 
